@@ -48,6 +48,8 @@ def create_cv_data(word_embedding,n_fold,random_seed):
 
 
 def multiprocessing_lda_training(data_list,param):
+
+    print("Start a cv work.")
     
     perplexity_list = []
     
@@ -77,9 +79,11 @@ if __name__ == "__main__":
 
     #### Set the parameter for the cv training ####
     
-    topic_num_list = [2,3]
-    n_fold = 2
-    random_seed = 100
+    topic_num_list = range(50,100,2)
+
+    n_fold = 5
+    random_seed = 150
+    n_process = 40
 
     word_embedding = word_embedding_bow
     dictionary = dictionary
@@ -92,56 +96,48 @@ if __name__ == "__main__":
              "alpha":'auto',
              "eta":"auto"}
 
-
+    
+    print("Create work.")
 
     data_list = create_cv_data(word_embedding,n_fold,random_seed) ### this creates the cross-validation dataset
     
     param_list = []  ### this creates the parameter grid for the cross-validation dataset
+
     for topic in topic_num_list:
         param["num_topics"] = topic
         param_list.append(param.copy())
- 
 
-    #### Test the single-core training ####
+
     
-    print("1")
-
-    start = time.time()
 
     result_list = []
 
-    for param in param_list:
-        print("1")
+
+    print("Start to assign work")
     
-        result = multiprocessing_lda_training(data_list,param)
-        result_list.append(result)
-    
-    end = time.time()
 
-    print(end-start)
-
-
-    #### Test the multi-core training ####
-    
-    print("2")
-
-    start = time.time()
-
-    result_list = []
-
-    pool = mp.Pool(6)
+    pool = mp.Pool(n_process)  
 
     for param in param_list:
 
         pool.apply_async(multiprocessing_lda_training, args=(data_list,param), callback = perplexity_callback)
 
+    
+    print("Work Start.")
 
     pool.close()
     pool.join()
 
-    end = time.time()
+    print("Work Finished.")
 
-    print(end-start)
+
+    with open("data/result/topic_number_cv_list.txt","w+") as f:
+        for result in result_list:
+
+            f.write(str(result))
+            f.write("\n")
+
+
 
 
 
